@@ -1,7 +1,10 @@
+{% load static %}
 <!DOCTYPE html>
-<html>
+<html lang="en">
 <head>
+    <meta charset="UTF-8">
     <title>Registration Successful</title>
+    <link rel="stylesheet" href="{% static 'registration/style.css' %}">
 </head>
 <body>
     <h1>Student Registered Successfully!</h1>
@@ -12,6 +15,9 @@
         Register Another Student
     </a>
 
+    <br><br>
+
+    <a href="{% url 'student_list' %}">View Student Directory</a>
     <br><br>
 
     <a href="{% url 'home' %}">Go to Home</a>
