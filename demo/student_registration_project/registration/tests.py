@@ -1,10 +1,19 @@
 from django.test import TestCase
 from django.urls import reverse
+from django.contrib.auth.models import User
 
 from .models import Student
 
 
 class StudentDirectoryTests(TestCase):
+    def setUp(self):
+        self.staff = User.objects.create_user(
+            username='staff',
+            password='Test-Staff-Password',
+            is_staff=True,
+        )
+        self.client.force_login(self.staff)
+
     def create_student(
         self,
         student_id='S001',
@@ -147,3 +156,38 @@ class StudentDirectoryTests(TestCase):
 
         self.assertRedirects(response, reverse('registration_success'))
         self.assertTrue(Student.objects.filter(student_id='S004').exists())
+
+
+class StaffAuthenticationTests(TestCase):
+    def test_unauthenticated_users_are_redirected_to_login(self):
+        protected_urls = [
+            reverse('staff_dashboard'),
+            reverse('student_list'),
+            reverse('student_create'),
+        ]
+
+        for url in protected_urls:
+            with self.subTest(url=url):
+                response = self.client.get(url)
+                self.assertRedirects(
+                    response,
+                    f"{reverse('login')}?next={url}",
+                    fetch_redirect_response=False,
+                )
+
+    def test_non_staff_users_cannot_open_staff_pages(self):
+        User.objects.create_user(
+            username='student',
+            password='Test-Student-Password',
+            is_staff=False,
+        )
+        self.client.login(username='student', password='Test-Student-Password')
+
+        response = self.client.get(reverse('staff_dashboard'))
+
+        self.assertEqual(response.status_code, 302)
+        self.assertIn(reverse('login'), response.url)
+
+    def test_public_registration_remains_available(self):
+        response = self.client.get(reverse('student_registration'))
+        self.assertEqual(response.status_code, 200)

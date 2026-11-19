@@ -1,9 +1,14 @@
 from django.contrib import messages
+from django.contrib.auth.decorators import user_passes_test
 from django.db.models import Q
 from django.shortcuts import get_object_or_404, redirect, render
 
 from .forms import StudentForm
 from .models import Student
+
+
+def staff_check(user):
+    return user.is_authenticated and user.is_staff
 
 
 def student_registration(request):
@@ -25,6 +30,12 @@ def registration_success(request):
     )
 
 
+@user_passes_test(staff_check, login_url='login')
+def staff_dashboard(request):
+    return render(request, 'registration/dashboard.html')
+
+
+@user_passes_test(staff_check, login_url='login')
 def student_list(request):
     query = request.GET.get('q', '').strip()
     students = Student.objects.all().order_by('last_name', 'first_name')
@@ -41,6 +52,7 @@ def student_list(request):
     )
 
 
+@user_passes_test(staff_check, login_url='login')
 def student_detail(request, pk):
     student = get_object_or_404(Student, pk=pk)
     return render(
@@ -50,6 +62,7 @@ def student_detail(request, pk):
     )
 
 
+@user_passes_test(staff_check, login_url='login')
 def student_create(request):
     if request.method == 'POST':
         form = StudentForm(request.POST)
@@ -66,6 +79,7 @@ def student_create(request):
     )
 
 
+@user_passes_test(staff_check, login_url='login')
 def student_update(request, pk):
     student = get_object_or_404(Student, pk=pk)
     if request.method == 'POST':
@@ -87,6 +101,7 @@ def student_update(request, pk):
     )
 
 
+@user_passes_test(staff_check, login_url='login')
 def student_delete(request, pk):
     student = get_object_or_404(Student, pk=pk)
     if request.method == 'POST':
