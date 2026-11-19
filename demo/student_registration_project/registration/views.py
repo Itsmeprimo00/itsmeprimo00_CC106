@@ -32,7 +32,37 @@ def registration_success(request):
 
 @user_passes_test(staff_check, login_url='login')
 def staff_dashboard(request):
-    return render(request, 'registration/dashboard.html')
+    total_students = Student.objects.count()
+    male_students = Student.objects.filter(gender='Male').count()
+    female_students = Student.objects.filter(gender='Female').count()
+    male_percent = (
+        male_students / total_students * 100
+        if total_students > 0 else 0
+    )
+    female_percent = (
+        female_students / total_students * 100
+        if total_students > 0 else 0
+    )
+
+    query = request.GET.get('q', '').strip()
+    students = Student.objects.all().order_by('last_name', 'first_name')
+    if query:
+        students = students.filter(
+            Q(student_id__icontains=query)
+            | Q(first_name__icontains=query)
+            | Q(last_name__icontains=query)
+        )
+
+    context = {
+        'total_students': total_students,
+        'male_students': male_students,
+        'female_students': female_students,
+        'male_percent': male_percent,
+        'female_percent': female_percent,
+        'students': students,
+        'query': query,
+    }
+    return render(request, 'registration/dashboard.html', context)
 
 
 @user_passes_test(staff_check, login_url='login')

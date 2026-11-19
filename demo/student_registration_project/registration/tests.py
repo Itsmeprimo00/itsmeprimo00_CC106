@@ -61,6 +61,51 @@ class StudentDirectoryTests(TestCase):
             ['S002', 'S001'],
         )
 
+    def test_dashboard_summaries_and_search_are_independent(self):
+        ada = self.create_student()
+        self.create_student(
+            'S002',
+            'Grace',
+            'Hopper',
+        )
+        Student.objects.create(
+            student_id='S003',
+            first_name='Alan',
+            last_name='Turing',
+            gender='Male',
+            date_of_birth='1912-06-23',
+            contact_no='5551234',
+        )
+
+        response = self.client.get(
+            reverse('staff_dashboard'),
+            {'q': ada.student_id},
+        )
+
+        self.assertEqual(response.status_code, 200)
+        self.assertContains(
+            response,
+            'You are logged in as an authorized staff user.',
+        )
+        self.assertEqual(response.context['total_students'], 3)
+        self.assertEqual(response.context['male_students'], 1)
+        self.assertEqual(response.context['female_students'], 2)
+        self.assertAlmostEqual(response.context['male_percent'], 100 / 3)
+        self.assertAlmostEqual(response.context['female_percent'], 200 / 3)
+        self.assertEqual(
+            [student.student_id for student in response.context['students']],
+            [ada.student_id],
+        )
+
+    def test_dashboard_handles_no_students(self):
+        response = self.client.get(reverse('staff_dashboard'))
+
+        self.assertEqual(response.status_code, 200)
+        self.assertEqual(response.context['total_students'], 0)
+        self.assertEqual(response.context['male_percent'], 0)
+        self.assertEqual(response.context['female_percent'], 0)
+        self.assertContains(response, 'No student records found.')
+
     def test_create_student_saves_valid_model_form(self):
         response = self.client.post(
             reverse('student_create'),
